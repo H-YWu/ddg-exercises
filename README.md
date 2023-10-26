@@ -6,7 +6,7 @@ Please refer to the original [README](./README_ddg.md) for details.
 
 ## Assignment 0: Combinatorial Surfaces
 
-Apply the `link` operator many times started from a single vertex:
+Apply the `link` operator many times starting from a single vertex:
 
 ![links 1 vertex](./imgs/why/links-a-vertex.png)
 
@@ -14,6 +14,6 @@ Then apply the `star`, `closure`, and `boundary` operator:
 
 ![star closure boundary](./imgs/why/star-closure-boundary.png)
 
-A "stable" state of applying the `link` operator multiple times started from the edges of a single triangle (pretty fun, huh?):
+A "stable" state of applying the `link` operator multiple times starting from the edges of a single triangle (pretty fun, huh?):
 
 ![links 3 edges](./imgs/why/links-3-edges.png)
