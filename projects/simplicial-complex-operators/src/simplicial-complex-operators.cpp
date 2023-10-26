@@ -290,7 +290,6 @@ bool SimplicialComplexOperators::isComplex(const MeshSubset& subset) const {
             } 
         }
     }
-    // then edges
     for (size_t e_idx : subset.edges) {
         Edge e = mesh->edge(e_idx);
         auto adj_vertices = e.adjacentVertices();
@@ -316,7 +315,6 @@ bool SimplicialComplexOperators::isComplex(const MeshSubset& subset) const {
  */
 int SimplicialComplexOperators::isPureComplex(const MeshSubset& subset) const {
 
-    // TODO
     if (subset.faces.size() > 0) {
         size_t face_edges_count = 0;
         size_t face_vertices_count = 0;
@@ -345,7 +343,7 @@ int SimplicialComplexOperators::isPureComplex(const MeshSubset& subset) const {
         }
         if (face_edges_count != subset.edges.size()) return -1;
         if (face_vertices_count != subset.vertices.size()) return -1;
-        return 3;
+        return 2;
     }
     else if (subset.edges.size() > 0) {
         size_t edge_vertices_count = 0;
@@ -363,10 +361,10 @@ int SimplicialComplexOperators::isPureComplex(const MeshSubset& subset) const {
             }
         }
         if (edge_vertices_count != subset.vertices.size()) return -1;
-        return 2;
+        return 1;
     }
-    else if (subset.vertices.size() > 0) return 1;
-    return 0;
+    else if (subset.vertices.size() > 0) return 0;
+    return -1;
 }
 
 /*
@@ -377,6 +375,60 @@ int SimplicialComplexOperators::isPureComplex(const MeshSubset& subset) const {
  */
 MeshSubset SimplicialComplexOperators::boundary(const MeshSubset& subset) const {
 
-    // TODO
-    return subset; // placeholder
+    // the set of all simplices σ that are proper faces of exactly one simplex of K′
+    // count
+    std::map<size_t, size_t> vertexCount;
+    std::map<size_t, size_t> edgeCount;
+    for (size_t f_idx : subset.faces) {
+        Face f = mesh->face(f_idx);
+        auto adj_edges = f.adjacentEdges();
+        for (auto e : adj_edges) {
+            size_t e_idx = e.getIndex();
+            if (edgeCount.find(e_idx) != edgeCount.end()) {
+                edgeCount[e_idx] = edgeCount[e_idx] + 1;
+            }
+            else {
+                edgeCount.insert(std::make_pair(e_idx, 1));
+            }
+        }
+        auto adj_vertices = f.adjacentVertices();
+        for (auto v : adj_vertices) {
+            size_t v_idx = v.getIndex();
+            if (vertexCount.find(v_idx) != vertexCount.end()) {
+                vertexCount[v_idx] = vertexCount[v_idx] + 1;
+            }
+            else {
+                vertexCount.insert(std::make_pair(v_idx, 1));
+            }
+        }
+    }
+    for (size_t e_idx : subset.edges) {
+        Edge e = mesh->edge(e_idx);
+        auto adj_vertices = e.adjacentVertices();
+         for (auto v : adj_vertices) {
+            size_t v_idx = v.getIndex();
+            if (vertexCount.find(v_idx) != vertexCount.end()) {
+                vertexCount[v_idx] = vertexCount[v_idx] + 1;
+            }
+            else {
+                vertexCount.insert(std::make_pair(v_idx, 1));
+            }
+        }
+    }
+    // select those exist exactly once
+    std::set<size_t> BdVertices;
+    std::set<size_t> BdEdges;
+    for (const auto& pair : edgeCount) {
+        if (pair.second == 1) {
+            BdEdges.insert(pair.first);
+        }
+    }
+    for (const auto& pair : vertexCount) {
+        if (pair.second == 1) {
+            BdVertices.insert(pair.first);
+        }
+    }
+
+    // closure of this "once" subset
+    return closure(MeshSubset(BdVertices, BdEdges, std::set<size_t>()));
 }
