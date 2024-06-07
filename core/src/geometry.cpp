@@ -79,9 +79,23 @@ double VertexPositionGeometry::totalArea() const {
  * Returns: The cotan of the angle opposite the given halfedge.
  */
 double VertexPositionGeometry::cotan(Halfedge he) const {
+    if (he.isInterior()) {
+        Halfedge h = he;
+        Vector3 pB = inputVertexPositions[h.vertex()];
+        h = h.next();
+        Vector3 pC = inputVertexPositions[h.vertex()];
+        h = h.next();
+        Vector3 pA = inputVertexPositions[h.vertex()];
+        GC_SAFETY_ASSERT(h.next() == he, "faces must be triangular");
 
-    // TODO
-    return 0; // placeholder
+        Vector3 vecR = pB - pA;
+        Vector3 vecL = pC - pA;
+
+        double cotValue = dot(vecR, vecL) / norm(cross(vecR, vecL));
+        return cotValue;
+    } else {
+        return 0.0;
+    }
 }
 
 /*
@@ -91,9 +105,13 @@ double VertexPositionGeometry::cotan(Halfedge he) const {
  * Returns: The barycentric dual area of the given vertex.
  */
 double VertexPositionGeometry::barycentricDualArea(Vertex v) const {
+    double areaSum = 0.0;
 
-    // TODO
-    return 0; // placeholder
+    for (Face f : v.adjacentFaces()) {
+        areaSum += faceArea(f);
+    }
+
+    return areaSum/3.0;
 }
 
 /*

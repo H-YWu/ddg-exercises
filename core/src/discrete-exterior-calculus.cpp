@@ -41,9 +41,17 @@ namespace surface {
  * Returns: A sparse diagonal matrix representing the Hodge operator that can be applied to discrete 0-forms.
  */
 SparseMatrix<double> VertexPositionGeometry::buildHodgeStar0Form() const {
-
-    // TODO
-    return identityMatrix<double>(1); // placeholder
+    int n = mesh.nVertices();
+    SparseMatrix<double> HodgeStar0Form(n, n);
+    std::vector<Eigen::Triplet<double>> tripletList;
+    tripletList.reserve(n);
+    for (Vertex v : mesh.vertices()) {
+        double area = barycentricDualArea(v);
+        int i = v.getIndex();
+        tripletList.emplace_back(i, i, area);
+    }
+    HodgeStar0Form.setFromTriplets(tripletList.begin(), tripletList.end());
+    return HodgeStar0Form;
 }
 
 /*
@@ -53,9 +61,19 @@ SparseMatrix<double> VertexPositionGeometry::buildHodgeStar0Form() const {
  * Returns: A sparse diagonal matrix representing the Hodge operator that can be applied to discrete 1-forms.
  */
 SparseMatrix<double> VertexPositionGeometry::buildHodgeStar1Form() const {
-
-    // TODO
-    return identityMatrix<double>(1); // placeholder
+    int n = mesh.nEdges();
+    SparseMatrix<double> HodgeStar1Form(n, n);
+    std::vector<Eigen::Triplet<double>> tripletList;
+    tripletList.reserve(n);
+    for (Edge e : mesh.edges()) {
+        Halfedge he = e.halfedge();
+        double cota = cotan(he);
+        double cotb = cotan(he.twin());
+        int i = e.getIndex();
+        tripletList.emplace_back(i, i, 0.5 * (cota + cotb));
+    }
+    HodgeStar1Form.setFromTriplets(tripletList.begin(), tripletList.end());
+    return HodgeStar1Form;
 }
 
 /*
@@ -65,9 +83,17 @@ SparseMatrix<double> VertexPositionGeometry::buildHodgeStar1Form() const {
  * Returns: A sparse diagonal matrix representing the Hodge operator that can be applied to discrete 2-forms.
  */
 SparseMatrix<double> VertexPositionGeometry::buildHodgeStar2Form() const {
-
-    // TODO
-    return identityMatrix<double>(1); // placeholder
+    int n = mesh.nFaces();
+    SparseMatrix<double> HodgeStar2Form(n, n);
+    std::vector<Eigen::Triplet<double>> tripletList;
+    tripletList.reserve(n);
+    for (Face f : mesh.faces()) {
+        double area = faceArea(f);
+        int i = f.getIndex();
+        tripletList.emplace_back(i, i, 1.0/area);
+    }
+    HodgeStar2Form.setFromTriplets(tripletList.begin(), tripletList.end());
+    return HodgeStar2Form;
 }
 
 /*
@@ -77,9 +103,23 @@ SparseMatrix<double> VertexPositionGeometry::buildHodgeStar2Form() const {
  * Returns: A sparse matrix representing the exterior derivative that can be applied to discrete 0-forms.
  */
 SparseMatrix<double> VertexPositionGeometry::buildExteriorDerivative0Form() const {
+    size_t nv = mesh.nVertices();
+    size_t ne = mesh.nEdges(); 
+    SparseMatrix<double> Derivative0Form(ne, nv);
+    std::vector<Eigen::Triplet<double>> tripletList;
+    tripletList.reserve(2*ne);
 
-    // TODO
-    return identityMatrix<double>(1); // placeholder
+    for (Edge e : mesh.edges()) {
+        Halfedge he = e.halfedge();
+        Vertex vs = he.vertex();
+        Vertex vt = he.twin().vertex();
+        tripletList.emplace_back(e.getIndex(), vs.getIndex(), -1.0);
+        tripletList.emplace_back(e.getIndex(), vt.getIndex(), 1.0);
+    }
+
+    Derivative0Form.setFromTriplets(tripletList.begin(), tripletList.end());
+
+    return Derivative0Form;
 }
 
 /*
@@ -89,9 +129,25 @@ SparseMatrix<double> VertexPositionGeometry::buildExteriorDerivative0Form() cons
  * Returns: A sparse matrix representing the exterior derivative that can be applied to discrete 1-forms.
  */
 SparseMatrix<double> VertexPositionGeometry::buildExteriorDerivative1Form() const {
+    size_t ne = mesh.nEdges();
+    size_t nf = mesh.nFaces();
+    SparseMatrix<double> Derivative1Form(nf, ne);
+    std::vector<Eigen::Triplet<double>> tripletList;
+    tripletList.reserve(3*nf);
 
-    // TODO
-    return identityMatrix<double>(1); // placeholder
+    for (Face f : mesh.faces()) {
+        Halfedge he = f.halfedge();
+        for (int i = 0; i < 3; ++i) {
+            Edge e = he.edge();
+            bool isSameOrientation = (he == e.halfedge());
+            tripletList.emplace_back(f.getIndex(), e.getIndex(), isSameOrientation ? 1.0 : -1.0);
+            he = he.next();
+        }
+    }
+
+    Derivative1Form.setFromTriplets(tripletList.begin(), tripletList.end());
+
+    return Derivative1Form;
 }
 
 } // namespace surface
